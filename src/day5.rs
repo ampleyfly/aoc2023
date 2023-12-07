@@ -10,9 +10,20 @@ struct Range {
     len: u64,
 }
 
+#[derive(Clone, Copy, PartialEq, Debug)]
+struct SeedRange {
+    start: u64,
+    len: u64,
+}
+
+#[derive(Debug)]
+struct Map {
+    ranges: Vec<Range>,
+}
+
 impl Range {
     fn contains(self: &Self, num: u64) -> bool {
-        self.src_start <= num && num <= self.src_start + self.len
+        self.src_start <= num && num < self.src_start + self.len
     }
 
     fn convert(self: &Self, num: u64) -> u64 {
@@ -20,9 +31,32 @@ impl Range {
     }
 }
 
-#[derive(Debug)]
-struct Map {
-    ranges: Vec<Range>,
+impl SeedRange {
+    fn split_map(self: &Self, range: &Range) -> (SeedRange, Option<SeedRange>) {
+        let last = self.start + self.len - 1;
+        let range_last = range.src_start + range.len;
+        if last <= range.src_start + range.len {
+            (
+                SeedRange {
+                    start: range.convert(self.start),
+                    len: self.len,
+                },
+                None,
+            )
+        } else {
+            let len = range_last - self.start;
+            (
+                SeedRange {
+                    start: range.convert(self.start),
+                    len,
+                },
+                Some(SeedRange {
+                    start: self.start + len,
+                    len: self.len - len,
+                }),
+            )
+        }
+    }
 }
 
 impl Map {
@@ -33,6 +67,27 @@ impl Map {
             }
         }
         num
+    }
+
+    fn convert_range(self: &Self, seeds: &SeedRange) -> Vec<SeedRange> {
+        let mut result = vec![];
+        for range in &self.ranges {
+            if range.contains(seeds.start) {
+                match seeds.split_map(range) {
+                    (first, Some(rem)) => {
+                        result.push(first);
+                        result.extend(self.convert_range(&rem));
+                    }
+                    (first, None) => {
+                        result.push(first);
+                    }
+                }
+            }
+        }
+        if result.is_empty() {
+            result.push(*seeds)
+        }
+        result
     }
 }
 
@@ -65,7 +120,7 @@ fn parse_map(lines: &mut dyn Iterator<Item = &str>) -> Map {
 }
 
 #[aoc_generator(day5)]
-pub fn input_generator(input: &str) -> Input {
+fn input_generator(input: &str) -> Input {
     let mut lines = input.lines();
     let seeds = lines
         .next()
@@ -88,7 +143,7 @@ pub fn input_generator(input: &str) -> Input {
 }
 
 #[aoc(day5, part1)]
-pub fn part1(stuff: &Input) -> u64 {
+fn part1(stuff: &Input) -> u64 {
     let (seeds, names, maps) = stuff;
     seeds
         .iter()
@@ -110,12 +165,48 @@ pub fn part1(stuff: &Input) -> u64 {
         .unwrap()
 }
 
+#[aoc(day5, part2)]
+fn part2(stuff: &Input) -> u64 {
+    let (seeds, names, maps) = stuff;
+    seeds
+        .chunks(2)
+        .map(|c| {
+            let start = *c.get(0).unwrap();
+            let len = *c.get(1).unwrap();
+            SeedRange { start, len }
+        })
+        .map(|seed_range| {
+            let mut src_name = "seed";
+            let mut ranges = vec![seed_range];
+            loop {
+                let dst_name = names.get(src_name).unwrap();
+                let map = maps.get(dst_name).unwrap();
+                let mut new_ranges = vec![];
+                for range in &ranges {
+                    let new = map.convert_range(&range);
+                    new_ranges.extend(new);
+                }
+                ranges = new_ranges;
+                src_name = dst_name;
+                if src_name == "location" {
+                    break;
+                }
+            }
+            *ranges
+                .iter()
+                .map(|SeedRange { start, .. }| start)
+                .min()
+                .unwrap()
+        })
+        .min()
+        .unwrap()
+}
+
 #[cfg(test)]
 mod test {
-    use super::{input_generator, part1};
+    use super::*;
 
-    fn sample1() {
-        let input = "seeds: 79 14 55 13
+    const INPUT: &str = "seeds: 79 14 55 13
 
 seed-to-soil map:
 50 98 2
@@ -148,6 +239,26 @@ temperature-to-humidity map:
 humidity-to-location map:
 60 56 37
 56 93 4";
-        assert_eq!(part1(&input_generator(input)), 35)
+
+    #[test]
+    fn sample1() {
+        assert_eq!(part1(&input_generator(INPUT)), 35)
+    }
+
+    #[test]
+    fn split_seed_range() {
+        assert_eq!(
+            SeedRange { start: 55, len: 13 }.split_map(&Range {
+                dst_start: 52,
+                src_start: 50,
+                len: 48
+            }),
+            (SeedRange { start: 57, len: 13 }, None)
+        )
+    }
+
+    #[test]
+    fn sample2() {
+        assert_eq!(part2(&input_generator(INPUT)), 46)
     }
 }
