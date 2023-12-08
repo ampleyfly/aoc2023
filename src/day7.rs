@@ -24,7 +24,7 @@ enum HandType {
     FiveOfAKind(),
 }
 
-fn count_cards(cards: &Vec<Card>) -> HashMap<u32, Vec<Card>> {
+fn count_cards(cards: &Vec<Card>) -> HashMap<Card, u32> {
     let mut counts = HashMap::new();
     for &card in cards {
         counts
@@ -34,8 +34,12 @@ fn count_cards(cards: &Vec<Card>) -> HashMap<u32, Vec<Card>> {
             })
             .or_insert(1);
     }
+    counts
+}
+
+fn reverse_counts(counts: &HashMap<Card, u32>) -> HashMap<u32, Vec<Card>> {
     let mut result = HashMap::<u32, Vec<Card>>::new();
-    for (card, count) in counts {
+    for (&card, &count) in counts {
         result
             .entry(count)
             .and_modify(|vec| {
@@ -44,14 +48,6 @@ fn count_cards(cards: &Vec<Card>) -> HashMap<u32, Vec<Card>> {
             .or_insert(vec![card]);
     }
     result
-}
-
-fn nth<T: std::fmt::Debug>(vec: &Vec<T>, n: usize) -> &T {
-    vec.get(n).unwrap()
-}
-
-fn sort_desc<T: Ord>(vec: &mut Vec<T>) {
-    vec.sort_by(|a, b| b.cmp(a));
 }
 
 mod part1 {
@@ -80,6 +76,7 @@ mod part1 {
     impl Hand {
         fn new(cards: Vec<Card>, bid: u32) -> Self {
             let counts = count_cards(&cards);
+            let counts = reverse_counts(&counts);
             let hand_type = classify_hand(&counts);
             Self {
                 cards,
@@ -137,13 +134,97 @@ mod part1 {
     }
 }
 
+mod part2 {
+    use super::*;
+
+    fn classify_hand(counts: &HashMap<u32, Vec<Card>>, jokers: u32) -> HandType {
+        if jokers >= 4 {
+            HandType::FiveOfAKind()
+        } else if jokers == 3 && counts.contains_key(&2) {
+            HandType::FiveOfAKind()
+        } else if jokers == 3 {
+            HandType::FourOfAKind()
+        } else if jokers == 2 && counts.contains_key(&3) {
+            HandType::FiveOfAKind()
+        } else if jokers == 2 && counts.contains_key(&2) {
+            HandType::FourOfAKind()
+        } else if jokers == 2 {
+            HandType::ThreeOfAKind()
+        } else if jokers == 1 && counts.contains_key(&4) {
+            HandType::FiveOfAKind()
+        } else if jokers == 1 && counts.contains_key(&3) {
+            HandType::FourOfAKind()
+        } else if jokers == 1
+            && let Some(two) = counts.get(&2)
+            && two.len() == 2
+        {
+            HandType::FullHouse()
+        } else if jokers == 1 && counts.contains_key(&2) {
+            HandType::ThreeOfAKind()
+        } else if jokers == 1 {
+            HandType::OnePair()
+        } else if counts.contains_key(&5) {
+            HandType::FiveOfAKind()
+        } else if counts.contains_key(&4) {
+            HandType::FourOfAKind()
+        } else if counts.contains_key(&3) && counts.contains_key(&2) {
+            HandType::FullHouse()
+        } else if counts.contains_key(&3) {
+            HandType::ThreeOfAKind()
+        } else if let Some(two) = counts.get(&2)
+            && two.len() == 2
+        {
+            HandType::TwoPair()
+        } else if counts.contains_key(&2) {
+            HandType::OnePair()
+        } else {
+            HandType::HighCard()
+        }
+    }
+
+    impl Hand {
+        fn new_part2(cards: Vec<Card>, bid: u32) -> Self {
+            let mut counts = count_cards(&cards);
+            let jokers = counts.remove(&1).unwrap_or(0);
+            let counts = reverse_counts(&counts);
+            let hand_type = classify_hand(&counts, jokers);
+            Self {
+                cards,
+                bid,
+                hand_type,
+            }
+        }
+    }
+
+    fn parse_card(c: char) -> Card {
+        match c {
+            'J' => 1,
+            'T' => 10,
+            'Q' => 12,
+            'K' => 13,
+            'A' => 14,
+            _ => c.to_digit(10).unwrap(),
+        }
+    }
+
+    pub fn parse_hand(line: &str) -> Hand {
+        let (hand, bid) = line.split_once(' ').unwrap();
+        Hand::new_part2(hand.chars().map(parse_card).collect(), bid.parse().unwrap())
+    }
+}
+
 #[aoc_generator(day7, part1)]
-pub fn input_generator(input: &str) -> Vec<Hand> {
+fn input_generator(input: &str) -> Vec<Hand> {
     input.lines().map(part1::parse_hand).collect()
 }
 
+#[aoc_generator(day7, part2)]
+fn input_generator_part2(input: &str) -> Vec<Hand> {
+    input.lines().map(part2::parse_hand).collect()
+}
+
 #[aoc(day7, part1)]
-pub fn part1(hands: &Vec<Hand>) -> u32 {
+fn part1(hands: &Vec<Hand>) -> u32 {
     let mut hands = hands.clone();
     hands.sort();
     hands
@@ -153,17 +234,28 @@ pub fn part1(hands: &Vec<Hand>) -> u32 {
         .sum()
 }
 
+#[aoc(day7, part2)]
+fn part2(hands: &Vec<Hand>) -> u32 {
+    part1(hands)
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
 
-    #[test]
-    fn sample1() {
-        let input = "32T3K 765
+    const INPUT: &str = "32T3K 765
 T55J5 684
 KK677 28
 KTJJT 220
 QQQJA 483";
-        assert_eq!(part1(&input_generator(input)), 6440);
+
+    #[test]
+    fn sample1() {
+        assert_eq!(part1(&input_generator(INPUT)), 6440);
+    }
+
+    #[test]
+    fn sample2() {
+        assert_eq!(part2(&input_generator_part2(INPUT)), 5905);
     }
 }
