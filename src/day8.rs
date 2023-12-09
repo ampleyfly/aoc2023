@@ -107,6 +107,80 @@ fn part2_simplified(input: &(Vec<Instruction>, HashMap<String, (String, String)>
         .fold(1, |acc, x| lcm(acc, x))
 }
 
+//#[aoc(day8, part2, generic)]
+fn part2_generic(input: &(Vec<Instruction>, HashMap<String, (String, String)>)) -> usize {
+    let (instrs, map) = input;
+    let mut ghosts: HashMap<usize, &str> = map
+        .keys()
+        .filter(|k| k.ends_with('A'))
+        .map(|k| k.as_str())
+        .enumerate()
+        .collect();
+    let ghost_count = ghosts.len();
+    let mut goals: Vec<Vec<usize>> = vec![vec![]; ghost_count];
+    let mut visited: Vec<HashMap<(usize, &str), usize>> = vec![HashMap::new(); ghost_count];
+    let mut loops: HashMap<usize, (usize, usize)> = HashMap::new();
+    instrs.iter().cycle().enumerate().find(|&(step, instr)| {
+        ghosts = ghosts
+            .iter()
+            .filter_map(|(&index, &node)| {
+                let stepmod = step % instrs.len();
+                if node.ends_with("Z") {
+                    goals[index].push(step);
+                }
+                visited[index].insert((stepmod, node), step);
+                let new = match instr {
+                    Instruction::Left => map.get(node).unwrap().0.as_str(),
+                    Instruction::Right => map.get(node).unwrap().1.as_str(),
+                };
+                if visited[index].contains_key(&(stepmod + 1, new)) {
+                    loops.insert(
+                        index,
+                        (
+                            *visited[index].get(&(stepmod + 1, new)).unwrap(),
+                            step - stepmod,
+                        ),
+                    );
+                    None
+                } else {
+                    Some((index, new))
+                }
+            })
+            .collect();
+        ghosts.is_empty()
+    });
+    let mut goal_steps = (0..ghost_count)
+        .map(|index| {
+            let (_loop_start, loop_length) = loops[&index];
+            let num_goals = goals[index].len();
+            goals[index]
+                .iter()
+                .cycle()
+                .enumerate()
+                .map(move |(i, goal)| goal + (i / num_goals) * loop_length)
+        })
+        .collect::<Vec<_>>();
+    let mut curs = vec![];
+    for goals in &mut goal_steps {
+        curs.push(goals.next().unwrap());
+    }
+    loop {
+        let (max_i, &max) = curs.iter().enumerate().max_by_key(|(_, &cur)| cur).unwrap();
+        if curs.iter().all(|&cur| cur == max) {
+            return max;
+        } else {
+            for (i, goals) in goal_steps.iter_mut().enumerate() {
+                if i == max_i {
+                    continue;
+                }
+                while curs[i] < max {
+                    curs[i] = goals.next().unwrap();
+                }
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -148,9 +222,9 @@ ZZZ = (ZZZ, ZZZ)";
 22Z = (22B, 22B)
 XXX = (XXX, XXX)";
         assert_eq!(part2_simplified(&input_generator(input)), 6);
+        assert_eq!(part2_generic(&input_generator(input)), 6);
     }
 
-    #[ignore]
     #[test]
     fn sample4() {
         let input = "LR
@@ -163,6 +237,6 @@ XXX = (XXX, XXX)";
 22C = (22B, 22B)
 22Z = (22C, 22C)
 XXX = (XXX, XXX)";
-        assert_eq!(part2(&input_generator(input)), 5);
+        assert_eq!(part2_generic(&input_generator(input)), 5);
     }
 }
