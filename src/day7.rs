@@ -99,7 +99,7 @@ mod part1 {
     }
 
     fn compare_cards(cards1: &[Card], cards2: &[Card]) -> Ordering {
-        let result = match (cards1.get(0), cards2.get(0)) {
+        let result = match (cards1.first(), cards2.first()) {
             (Some(x), Some(y)) if x == y => compare_cards(&cards1[1..], &cards2[1..]),
             (Some(x), Some(y)) if x > y => Ordering::Greater,
             (Some(x), Some(y)) if x < y => Ordering::Less,
@@ -138,9 +138,7 @@ mod part2 {
     use super::*;
 
     fn classify_hand(counts: &HashMap<u32, Vec<Card>>, jokers: u32) -> HandType {
-        if jokers >= 4 {
-            HandType::FiveOfAKind()
-        } else if jokers == 3 && counts.contains_key(&2) {
+        if jokers >= 4 || jokers == 3 && counts.contains_key(&2) {
             HandType::FiveOfAKind()
         } else if jokers == 3 {
             HandType::FourOfAKind()
@@ -224,8 +222,8 @@ fn input_generator_part2(input: &str) -> Vec<Hand> {
 }
 
 #[aoc(day7, part1)]
-fn part1(hands: &Vec<Hand>) -> u32 {
-    let mut hands = hands.clone();
+fn part1(hands: &[Hand]) -> u32 {
+    let mut hands = hands.to_owned();
     hands.sort();
     hands
         .iter()
@@ -235,7 +233,7 @@ fn part1(hands: &Vec<Hand>) -> u32 {
 }
 
 #[aoc(day7, part2)]
-fn part2(hands: &Vec<Hand>) -> u32 {
+fn part2(hands: &[Hand]) -> u32 {
     part1(hands)
 }
 

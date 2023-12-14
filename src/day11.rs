@@ -7,7 +7,7 @@ type Pos = (usize, usize);
 
 #[aoc_generator(day11)]
 fn input_generator(input: &str) -> (Vec<Pos>, Vec<usize>, Vec<usize>) {
-    let input_width = input.lines().nth(0).unwrap().len();
+    let input_width = input.lines().next().unwrap().len();
     let mut empty_columns = (0..input_width).collect::<HashSet<usize>>();
     let mut empty_rows = vec![];
     let galaxies = input
@@ -36,12 +36,7 @@ fn input_generator(input: &str) -> (Vec<Pos>, Vec<usize>, Vec<usize>) {
     (galaxies, empty_rows, empty_columns)
 }
 
-fn real_coords(
-    factor: usize,
-    galaxy: &Pos,
-    empty_rows: &Vec<usize>,
-    empty_columns: &Vec<usize>,
-) -> Pos {
+fn real_coords(factor: usize, galaxy: &Pos, empty_rows: &[usize], empty_columns: &[usize]) -> Pos {
     (
         galaxy.0 + (factor - 1) * empty_columns.iter().filter(|&cx| *cx < galaxy.0).count(),
         galaxy.1 + (factor - 1) * empty_rows.iter().filter(|&ry| *ry < galaxy.1).count(),
@@ -56,7 +51,7 @@ fn expand_space(factor: usize, input: &(Vec<Pos>, Vec<usize>, Vec<usize>)) -> Ve
         .collect()
 }
 
-fn sum_distances(galaxies: &Vec<Pos>) -> usize {
+fn sum_distances(galaxies: &[Pos]) -> usize {
     let mut distance = 0;
     for (i, g1) in galaxies.iter().enumerate() {
         for g2 in galaxies.iter().skip(i + 1) {

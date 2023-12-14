@@ -17,7 +17,7 @@ struct Part {
 }
 
 impl Part {
-    fn adjacent(self: &Self, symbol: &Symbol) -> bool {
+    fn adjacent(&self, symbol: &Symbol) -> bool {
         self.y - 1 <= symbol.y
             && symbol.y <= self.y + 1
             && self.start_x <= symbol.x
@@ -67,7 +67,7 @@ fn input_generator(input: &str) -> (Vec<Part>, Vec<Symbol>) {
             parts.push(Part {
                 y: (y + 1) as u32,
                 start_x,
-                end_x: (last_x + 1) as u32,
+                end_x: last_x + 1,
                 value,
             });
         }
@@ -80,12 +80,8 @@ fn part1(stuff: &(Vec<Part>, Vec<Symbol>)) -> u32 {
     let (parts, symbols) = stuff;
     parts
         .iter()
-        .filter_map(|part| {
-            symbols
-                .iter()
-                .any(|symbol| part.adjacent(symbol))
-                .then(|| part.value)
-        })
+        .filter(|part| symbols.iter().any(|symbol| part.adjacent(symbol)))
+        .map(|part| part.value)
         .sum()
 }
 

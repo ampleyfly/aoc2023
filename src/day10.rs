@@ -4,8 +4,6 @@ use aoc_runner_derive::aoc_generator;
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-type Dir = u8;
-type Tile = u8;
 type Pos = (usize, usize);
 type Size = (usize, usize);
 
@@ -14,45 +12,82 @@ struct Loc {
     dir: Dir,
 }
 
-mod Dirs {
-    pub const Right: u8 = 1;
-    pub const Down: u8 = 4;
-    pub const Left: u8 = 16;
-    pub const Up: u8 = 64;
+#[repr(u8)]
+#[derive(Clone, Copy)]
+enum Dir {
+    Right = 1,
+    Down = 4,
+    Left = 16,
+    Up = 64,
 }
 
-mod Tiles {
-    use super::Dirs;
-
-    pub const LeftRight: u8 = Dirs::Left | Dirs::Right;
-    pub const UpDown: u8 = Dirs::Up | Dirs::Down;
-    pub const UpRight: u8 = Dirs::Up | Dirs::Right;
-    pub const UpLeft: u8 = Dirs::Up | Dirs::Left;
-    pub const DownLeft: u8 = Dirs::Down | Dirs::Left;
-    pub const DownRight: u8 = Dirs::Down | Dirs::Right;
-    pub const Empty: u8 = 0;
+#[repr(u8)]
+#[derive(Clone, Copy)]
+enum Tile {
+    LeftRight = Dir::Left as u8 | Dir::Right as u8,
+    UpDown = Dir::Up as u8 | Dir::Down as u8,
+    UpRight = Dir::Up as u8 | Dir::Right as u8,
+    UpLeft = Dir::Up as u8 | Dir::Left as u8,
+    DownLeft = Dir::Down as u8 | Dir::Left as u8,
+    DownRight = Dir::Down as u8 | Dir::Right as u8,
+    Empty = 0,
 }
 
 fn parse_tile(c: char) -> Option<Tile> {
     match c {
-        '-' => Some(Tiles::LeftRight),
-        '|' => Some(Tiles::UpDown),
-        'L' => Some(Tiles::UpRight),
-        'J' => Some(Tiles::UpLeft),
-        '7' => Some(Tiles::DownLeft),
-        'F' => Some(Tiles::DownRight),
-        '.' => Some(Tiles::Empty),
+        '-' => Some(Tile::LeftRight),
+        '|' => Some(Tile::UpDown),
+        'L' => Some(Tile::UpRight),
+        'J' => Some(Tile::UpLeft),
+        '7' => Some(Tile::DownLeft),
+        'F' => Some(Tile::DownRight),
+        '.' => Some(Tile::Empty),
         'S' => None,
         _ => panic!(),
     }
 }
 
+fn just_dir(tile: Tile, dir: Dir) -> u8 {
+    (tile as u8) & (dir as u8)
+}
+
+fn has_dir(tile: Tile, dir: Dir) -> bool {
+    just_dir(tile, dir) != 0
+}
+
 fn flip_tile(tile: Tile) -> Tile {
-    tile.rotate_left(4)
+    to_tile((tile as u8).rotate_left(4))
 }
 
 fn flip_dir(dir: Dir) -> Dir {
-    dir.rotate_left(4)
+    to_dir((dir as u8).rotate_left(4))
+}
+
+fn to_dir(val: u8) -> Dir {
+    unsafe {
+        assert!(
+            val == Dir::Right as u8
+                || val == Dir::Down as u8
+                || val == Dir::Left as u8
+                || val == Dir::Up as u8
+        );
+        std::mem::transmute(val)
+    }
+}
+
+fn to_tile(val: u8) -> Tile {
+    unsafe {
+        assert!(
+            val == Tile::LeftRight as u8
+                || val == Tile::UpDown as u8
+                || val == Tile::UpRight as u8
+                || val == Tile::UpLeft as u8
+                || val == Tile::DownLeft as u8
+                || val == Tile::DownRight as u8
+                || val == Tile::Empty as u8
+        );
+        std::mem::transmute(val)
+    }
 }
 
 #[aoc_generator(day10)]
@@ -75,65 +110,41 @@ fn input_generator(input: &str) -> (Pos, Size, HashMap<Pos, Tile>) {
         }
     }
     for y in 1..=size.1 {
-        tiles.insert((0, y), Tiles::Empty);
-        tiles.insert((size.0 + 1, y), Tiles::Empty);
+        tiles.insert((0, y), Tile::Empty);
+        tiles.insert((size.0 + 1, y), Tile::Empty);
     }
     for x in 0..=size.0 + 1 {
-        tiles.insert((x, 0), Tiles::Empty);
-        tiles.insert((x, size.1 + 1), Tiles::Empty);
+        tiles.insert((x, 0), Tile::Empty);
+        tiles.insert((x, size.1 + 1), Tile::Empty);
     }
-    let up = tiles[&(start.0, start.1 - 1)] & Dirs::Down;
-    let down = tiles[&(start.0, start.1 + 1)] & Dirs::Up;
-    let left = tiles[&(start.0 - 1, start.1)] & Dirs::Right;
-    let right = tiles[&(start.0 + 1, start.1)] & Dirs::Left;
-    let start_tile = flip_tile(up | down | left | right);
+    let up = just_dir(tiles[&(start.0, start.1 - 1)], Dir::Down);
+    let down = just_dir(tiles[&(start.0, start.1 + 1)], Dir::Up);
+    let left = just_dir(tiles[&(start.0 - 1, start.1)], Dir::Right);
+    let right = just_dir(tiles[&(start.0 + 1, start.1)], Dir::Left);
+    let start_tile = flip_tile(to_tile(up | down | left | right));
     tiles.insert(start, start_tile);
     (start, (size.0 + 2, size.1 + 2), tiles)
 }
 
 fn step(pos: Pos, dir: Dir) -> Pos {
     match dir {
-        Dirs::Up => (pos.0, pos.1 - 1),
-        Dirs::Down => (pos.0, pos.1 + 1),
-        Dirs::Left => (pos.0 - 1, pos.1),
-        Dirs::Right => (pos.0 + 1, pos.1),
-        _ => panic!(),
+        Dir::Up => (pos.0, pos.1 - 1),
+        Dir::Down => (pos.0, pos.1 + 1),
+        Dir::Left => (pos.0 - 1, pos.1),
+        Dir::Right => (pos.0 + 1, pos.1),
     }
 }
 
 fn turn(tile: Tile, dir: Dir) -> Dir {
-    tile ^ flip_dir(dir)
-}
-
-fn show_tile(tile: Tile) -> char {
-    match tile {
-        Tiles::LeftRight => '─',
-        Tiles::UpDown => '│',
-        Tiles::UpRight => '└',
-        Tiles::UpLeft => '┘',
-        Tiles::DownLeft => '┐',
-        Tiles::DownRight => '┌',
-        Tiles::Empty => '░',
-        _ => panic!(),
-    }
-}
-
-fn show_dir(dir: Dir) -> char {
-    match dir {
-        Dirs::Up => '↑',
-        Dirs::Down => '↓',
-        Dirs::Left => '←',
-        Dirs::Right => '→',
-        _ => panic!(),
-    }
+    to_dir((tile as u8) ^ (flip_dir(dir) as u8))
 }
 
 fn walk_cycle(start: &Pos, tiles: &HashMap<Pos, Tile>) -> (HashSet<Pos>, usize) {
     let mut loc = Loc {
         pos: *start,
-        dir: *vec![Dirs::Up, Dirs::Down, Dirs::Left, Dirs::Right]
+        dir: *[Dir::Up, Dir::Down, Dir::Left, Dir::Right]
             .iter()
-            .find(|&dir| tiles[&start] & dir != 0)
+            .find(|&dir| has_dir(tiles[&start], *dir))
             .unwrap(),
     };
     let mut visited = HashSet::new();
@@ -153,15 +164,6 @@ fn part1(input: &(Pos, Size, HashMap<Pos, Tile>)) -> usize {
     let (start, _, tiles) = input;
     let (_, steps) = walk_cycle(start, tiles);
     steps / 2
-}
-
-fn show_tiles(size: Size, tiles: &HashMap<Pos, Tile>) {
-    for y in 0..size.1 {
-        for x in 0..size.0 {
-            print!("{}", show_tile(tiles[&(x, y)]));
-        }
-        println!("");
-    }
 }
 
 #[derive(PartialEq)]
@@ -187,19 +189,19 @@ fn part2(input: &(Pos, Size, HashMap<Pos, Tile>)) -> usize {
                 continue;
             }
             state = match (&state, tiles[&(x, y)]) {
-                (State::Outside, Tiles::UpDown) => State::Inside,
-                (State::Outside, Tiles::DownRight) => State::UpperEdge,
-                (State::Outside, Tiles::UpRight) => State::LowerEdge,
+                (State::Outside, Tile::UpDown) => State::Inside,
+                (State::Outside, Tile::DownRight) => State::UpperEdge,
+                (State::Outside, Tile::UpRight) => State::LowerEdge,
                 (State::Outside, _) => state,
-                (State::Inside, Tiles::UpDown) => State::Outside,
-                (State::Inside, Tiles::UpRight) => State::UpperEdge,
-                (State::Inside, Tiles::DownRight) => State::LowerEdge,
+                (State::Inside, Tile::UpDown) => State::Outside,
+                (State::Inside, Tile::UpRight) => State::UpperEdge,
+                (State::Inside, Tile::DownRight) => State::LowerEdge,
                 (State::Inside, _) => State::Outside,
-                (State::UpperEdge, Tiles::UpLeft) => State::Inside,
-                (State::UpperEdge, Tiles::DownLeft) => State::Outside,
-                (State::LowerEdge, Tiles::DownLeft) => State::Inside,
-                (State::LowerEdge, Tiles::UpLeft) => State::Outside,
-                (_, Tiles::LeftRight) => state,
+                (State::UpperEdge, Tile::UpLeft) => State::Inside,
+                (State::UpperEdge, Tile::DownLeft) => State::Outside,
+                (State::LowerEdge, Tile::DownLeft) => State::Inside,
+                (State::LowerEdge, Tile::UpLeft) => State::Outside,
+                (_, Tile::LeftRight) => state,
                 _ => panic!(),
             }
         }

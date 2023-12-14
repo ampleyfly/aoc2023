@@ -43,7 +43,7 @@ fn count_ways_to_win(race: &(u64, u64)) -> u64 {
 }
 
 #[aoc(day6, part1)]
-fn part1(races: &Vec<(u64, u64)>) -> u64 {
+fn part1(races: &[(u64, u64)]) -> u64 {
     races.iter().map(count_ways_to_win).product()
 }
 

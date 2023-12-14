@@ -1,12 +1,13 @@
 use aoc_runner_derive::aoc;
 
+use std::cmp::Ordering;
 use std::collections::HashMap;
 
 type Slot<'a> = &'a str;
 type Row<'a> = Vec<Slot<'a>>;
 type GroupSize = usize;
 
-fn input_generator<'a>(input: &'a str) -> Vec<(Row<'a>, Vec<GroupSize>)> {
+fn input_generator(input: &str) -> Vec<(Row, Vec<GroupSize>)> {
     input
         .lines()
         .map(|line| {
@@ -93,39 +94,43 @@ fn count_arrangements<'a, 'b>(
         0
     } else {
         let skippable_slot = !slots[0].chars().any(|s| s == '#');
-        if groups[0] > slots[0].len() {
-            if skippable_slot {
-                // Skip this slot
-                count_arrangements(&slots[1..], groups, memory)
-            } else {
-                // This arrangement cannot cover the damaged springs in this slot
-                0
+        match groups[0].cmp(&slots[0].len()) {
+            Ordering::Greater => {
+                if skippable_slot {
+                    // Skip this slot
+                    count_arrangements(&slots[1..], groups, memory)
+                } else {
+                    // This arrangement cannot cover the damaged springs in this slot
+                    0
+                }
             }
-        } else if groups[0] == slots[0].len() {
-            // Try both using and skipping this slot
-            count_arrangements(&slots[1..], &groups[1..], memory)
-                + if skippable_slot {
-                    count_arrangements(&slots[1..], groups, memory)
-                } else {
-                    0
-                }
-        } else {
-            // Try every possible placement of the group within the slot, as well as skipping the slot, if applicable
-            placements(&slots[0], &groups[0])
-                .map(|slot| match slot {
-                    Some(slot) => {
-                        let mut rem = vec![slot];
-                        rem.extend_from_slice(&slots[1..]);
-                        count_arrangements(&rem, &groups[1..], memory)
+            Ordering::Equal => {
+                // Try both using and skipping this slot
+                count_arrangements(&slots[1..], &groups[1..], memory)
+                    + if skippable_slot {
+                        count_arrangements(&slots[1..], groups, memory)
+                    } else {
+                        0
                     }
-                    None => count_arrangements(&slots[1..], &groups[1..], memory),
-                })
-                .sum::<usize>()
-                + if skippable_slot {
-                    count_arrangements(&slots[1..], groups, memory)
-                } else {
-                    0
-                }
+            }
+            Ordering::Less => {
+                // Try every possible placement of the group within the slot, as well as skipping the slot, if applicable
+                placements(&slots[0], &groups[0])
+                    .map(|slot| match slot {
+                        Some(slot) => {
+                            let mut rem = vec![slot];
+                            rem.extend_from_slice(&slots[1..]);
+                            count_arrangements(&rem, &groups[1..], memory)
+                        }
+                        None => count_arrangements(&slots[1..], &groups[1..], memory),
+                    })
+                    .sum::<usize>()
+                    + if skippable_slot {
+                        count_arrangements(&slots[1..], groups, memory)
+                    } else {
+                        0
+                    }
+            }
         }
     };
     record(memory, slots, groups, result);

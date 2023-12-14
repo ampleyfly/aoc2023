@@ -13,7 +13,7 @@ fn input_generator(input: &str) -> Vec<Vec<i32>> {
         .collect()
 }
 
-fn calc_diffs(line: &Vec<i32>) -> Vec<i32> {
+fn calc_diffs(line: &[i32]) -> Vec<i32> {
     line.iter()
         .zip(line.iter().skip(1))
         .map(|(a, b)| b - a)
@@ -21,7 +21,7 @@ fn calc_diffs(line: &Vec<i32>) -> Vec<i32> {
 }
 
 #[aoc(day9, part1)]
-fn part1(lines: &Vec<Vec<i32>>) -> i32 {
+fn part1(lines: &[Vec<i32>]) -> i32 {
     lines
         .iter()
         .map(|line| {
@@ -31,13 +31,13 @@ fn part1(lines: &Vec<Vec<i32>>) -> i32 {
                 edges.push(*line.last().unwrap());
                 line = calc_diffs(&line);
             }
-            edges.iter().rev().fold(0, |acc, x| acc + x)
+            edges.iter().rev().sum::<i32>()
         })
         .sum()
 }
 
 #[aoc(day9, part2)]
-fn part2(lines: &Vec<Vec<i32>>) -> i32 {
+fn part2(lines: &[Vec<i32>]) -> i32 {
     lines
         .iter()
         .map(|line| {

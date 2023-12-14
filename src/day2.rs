@@ -10,11 +10,11 @@ struct Subset {
 }
 
 impl Subset {
-    fn contains(self: &Self, other: &Self) -> bool {
+    fn contains(&self, other: &Self) -> bool {
         self.red >= other.red && self.green >= other.green && self.blue >= other.blue
     }
 
-    fn power(self: &Self) -> u32 {
+    fn power(&self) -> u32 {
         self.red * self.green * self.blue
     }
 }
@@ -57,7 +57,7 @@ fn union(sets: &Vec<Subset>) -> Subset {
 }
 
 #[aoc(day2, part1)]
-fn part1(games: &Vec<(u32, Vec<Subset>)>) -> u32 {
+fn part1(games: &[(u32, Vec<Subset>)]) -> u32 {
     let actual = Subset {
         red: 12,
         green: 13,
@@ -65,12 +65,13 @@ fn part1(games: &Vec<(u32, Vec<Subset>)>) -> u32 {
     };
     games
         .iter()
-        .filter_map(|(game, subsets)| actual.contains(&union(subsets)).then(|| game))
+        .filter(|(_, subsets)| actual.contains(&union(subsets)))
+        .map(|(game, _)| game)
         .sum()
 }
 
 #[aoc(day2, part2)]
-fn part2(games: &Vec<(u32, Vec<Subset>)>) -> u32 {
+fn part2(games: &[(u32, Vec<Subset>)]) -> u32 {
     games
         .iter()
         .map(|(_game, subsets)| union(subsets).power())

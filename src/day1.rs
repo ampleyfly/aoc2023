@@ -32,7 +32,7 @@ fn find_first_digit(line: &str) -> u32 {
     };
     tails(line)
         .find_map(|tail| {
-            tail.chars().nth(0).unwrap().to_digit(10).or_else(|| {
+            tail.chars().next().unwrap().to_digit(10).or_else(|| {
                 numbers
                     .keys()
                     .find_map(|&key| tail.starts_with(key).then(|| numbers.get(key).unwrap()))
@@ -79,7 +79,7 @@ fn input_part2(input: &str) -> Vec<Vec<u32>> {
 }
 
 #[aoc(day1, part1)]
-fn part1(lines: &Vec<Vec<u32>>) -> String {
+fn part1(lines: &[Vec<u32>]) -> String {
     lines
         .iter()
         .map(|digits| digits.first().unwrap() * 10 + digits.last().unwrap())
@@ -88,7 +88,7 @@ fn part1(lines: &Vec<Vec<u32>>) -> String {
 }
 
 #[aoc(day1, part2)]
-fn part2(lines: &Vec<Vec<u32>>) -> String {
+fn part2(lines: &[Vec<u32>]) -> String {
     part1(lines)
 }
 

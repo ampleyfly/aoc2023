@@ -77,7 +77,7 @@ fn part2_simplified(input: &(Vec<Instruction>, HashMap<String, (String, String)>
             .iter()
             .filter_map(|(&index, &node)| {
                 let stepmod = step % instrs.len();
-                if node.ends_with("Z") {
+                if node.ends_with('Z') {
                     goals[index].push(step);
                 }
                 visited[index].insert((stepmod, node), step);
@@ -101,10 +101,7 @@ fn part2_simplified(input: &(Vec<Instruction>, HashMap<String, (String, String)>
             .collect();
         ghosts.is_empty()
     });
-    goals
-        .iter()
-        .map(|gs| *gs.first().unwrap())
-        .fold(1, |acc, x| lcm(acc, x))
+    goals.iter().map(|gs| *gs.first().unwrap()).fold(1, lcm)
 }
 
 //#[aoc(day8, part2, generic)]
@@ -125,7 +122,7 @@ fn part2_generic(input: &(Vec<Instruction>, HashMap<String, (String, String)>)) 
             .iter()
             .filter_map(|(&index, &node)| {
                 let stepmod = step % instrs.len();
-                if node.ends_with("Z") {
+                if node.ends_with('Z') {
                     goals[index].push(step);
                 }
                 visited[index].insert((stepmod, node), step);

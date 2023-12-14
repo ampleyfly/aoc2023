@@ -22,17 +22,17 @@ struct Map {
 }
 
 impl Range {
-    fn contains(self: &Self, num: u64) -> bool {
+    fn contains(&self, num: u64) -> bool {
         self.src_start <= num && num < self.src_start + self.len
     }
 
-    fn convert(self: &Self, num: u64) -> u64 {
+    fn convert(&self, num: u64) -> u64 {
         num - self.src_start + self.dst_start
     }
 }
 
 impl SeedRange {
-    fn split_map(self: &Self, range: &Range) -> (SeedRange, Option<SeedRange>) {
+    fn split_map(&self, range: &Range) -> (SeedRange, Option<SeedRange>) {
         let last = self.start + self.len - 1;
         let range_last = range.src_start + range.len;
         if last <= range.src_start + range.len {
@@ -60,7 +60,7 @@ impl SeedRange {
 }
 
 impl Map {
-    fn convert(self: &Self, num: u64) -> u64 {
+    fn convert(&self, num: u64) -> u64 {
         for range in &self.ranges {
             if range.contains(num) {
                 return range.convert(num);
@@ -69,7 +69,7 @@ impl Map {
         num
     }
 
-    fn convert_range(self: &Self, seeds: &SeedRange) -> Vec<SeedRange> {
+    fn convert_range(&self, seeds: &SeedRange) -> Vec<SeedRange> {
         let mut result = vec![];
         for range in &self.ranges {
             if range.contains(seeds.start) {
@@ -171,7 +171,7 @@ fn part2(stuff: &Input) -> u64 {
     seeds
         .chunks(2)
         .map(|c| {
-            let start = *c.get(0).unwrap();
+            let start = *c.first().unwrap();
             let len = *c.get(1).unwrap();
             SeedRange { start, len }
         })
@@ -183,7 +183,7 @@ fn part2(stuff: &Input) -> u64 {
                 let map = maps.get(dst_name).unwrap();
                 let mut new_ranges = vec![];
                 for range in &ranges {
-                    let new = map.convert_range(&range);
+                    let new = map.convert_range(range);
                     new_ranges.extend(new);
                 }
                 ranges = new_ranges;

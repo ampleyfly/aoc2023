@@ -25,7 +25,7 @@ fn input_generator(input: &str) -> Vec<(HashSet<u32>, HashSet<u32>)> {
 }
 
 #[aoc(day4, part1)]
-fn part1(cards: &Vec<(HashSet<u32>, HashSet<u32>)>) -> u32 {
+fn part1(cards: &[(HashSet<u32>, HashSet<u32>)]) -> u32 {
     cards
         .iter()
         .map(
@@ -38,7 +38,7 @@ fn part1(cards: &Vec<(HashSet<u32>, HashSet<u32>)>) -> u32 {
 }
 
 #[aoc(day4, part2)]
-fn part2(cards: &Vec<(HashSet<u32>, HashSet<u32>)>) -> u32 {
+fn part2(cards: &[(HashSet<u32>, HashSet<u32>)]) -> u32 {
     let mut counts = HashMap::<usize, u32>::new();
     cards
         .iter()
