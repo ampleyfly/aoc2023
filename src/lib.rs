@@ -1,5 +1,6 @@
 #![feature(let_chains)]
 #![feature(iter_intersperse)]
+#![feature(ascii_char)]
 
 use aoc_runner_derive::aoc_lib;
 
@@ -9,6 +10,7 @@ pub mod day11;
 pub mod day12;
 pub mod day13;
 pub mod day14;
+pub mod day15;
 pub mod day2;
 pub mod day3;
 pub mod day4;
